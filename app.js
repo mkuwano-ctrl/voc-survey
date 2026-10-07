@@ -77,19 +77,29 @@
   async function createRow() {
     if (!supa) return;
     // response_id は「来店ID|UID」から決定的に作っているので、開き直しや LIFF の二重読み込みでも同じ行を指す。
-    // 主キーで upsert し、衝突時は client_token / liff_opened_at だけ上書きして status と回答はそのまま残す。
-    const row = {
+    // upsert は既存行の読み取り権限（SELECT）を要求するため使わない（客側に回答を読ませない方針）。
+    // まず挿入し、既にあれば（主キー重複 23505）合言葉と開いた時刻だけ更新する。status と回答はそのまま残る。
+    const now = new Date().toISOString();
+    const { error } = await supa.from("survey_responses").insert({
       response_id: responseId,
       client_token: clientToken,
       visit_id: visitId,
       send_id: sendId,
       store_id: storeId,
       line_user_id: userId,
-      liff_opened_at: new Date().toISOString(),
+      status: "opened",
+      liff_opened_at: now,
       is_dev: devMode,
-    };
-    const { error } = await supa.from("survey_responses").upsert(row, { onConflict: "response_id" });
-    if (error) { console.warn("insert failed", error); showError("回答の保存先に接続できませんでした。回答は続けられますが、記録されない可能性があります。"); }
+    });
+    if (!error) return;
+    if (error.code === "23505") {
+      const { error: e2 } = await supa.from("survey_responses").update({ client_token: clientToken, liff_opened_at: now }).eq("response_id", responseId);
+      if (!e2) return;
+      console.warn("reopen update failed", e2);
+    } else {
+      console.warn("insert failed", error);
+    }
+    showError("回答の保存先に接続できませんでした。回答は続けられますが、記録されない可能性があります。");
   }
   function showError(msg) {
     const e = document.createElement("div"); e.className = "error"; e.textContent = msg; screenEl.prepend(e);
