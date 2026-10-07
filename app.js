@@ -214,8 +214,8 @@
         profile = { userId: p.userId, displayName: p.displayName };
       }
       steps = buildSteps();
-      await createRow();
-      render();
+      render();          // 先に画面を出す（保存先の応答を待たせない）
+      createRow();       // 行の作成は裏で進める。失敗時は画面上部に注意を出す
     } catch (e) {
       console.error(e);
       screenEl.innerHTML = "";
