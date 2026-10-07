@@ -28,8 +28,8 @@ html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: -
 .q h2 { margin: 4px 0 0; font-size: 18px; font-weight: 700; }
 .q .hint { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
 
-.scale { display: grid; grid-template-columns: repeat(11, 1fr); gap: 6px; margin: 16px 0 6px; }
-.scale button { aspect-ratio: 1; border: 1px solid var(--line); border-radius: 10px; background: var(--card); font-size: 15px; font-weight: 600; color: var(--ink); padding: 0; }
+.scale { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin: 16px 0 8px; }
+.scale button { height: 48px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); font-size: 18px; font-weight: 600; color: var(--ink); padding: 0; }
 .scale button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
 .scale-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
 
