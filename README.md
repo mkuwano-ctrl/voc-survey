@@ -14,6 +14,7 @@
 | config.js | **環境ごとに差し替える唯一のファイル**。LIFF ID／Supabase URL・anon key／店舗名・口コミURL／プラポリURL |
 | supabase/001_schema.sql | Supabase に貼るテーブル定義とRLS |
 | supabase/002_drop_display_name.sql | 001 を実行済みのプロジェクト向け。表示名の列を削除する |
+| supabase/003_minimize_columns.sql | 001 を実行済みのプロジェクト向け。ユーザーエージェントと会計金額の列を削除する |
 
 秘密情報（チャネルシークレット・チャネルアクセストークン・Supabase service_role key）はこのフォルダに置かない。
 

@@ -23,7 +23,6 @@ create table if not exists public.survey_responses (
   source_channel  text,
   uid_match       boolean,                       -- visits と突合して後から埋める（null=未判定）
   is_dev          boolean not null default false,
-  user_agent      text,
   liff_opened_at  timestamptz,
   answered_at     timestamptz,
   created_at      timestamptz not null default now(),
@@ -41,7 +40,6 @@ create table if not exists public.visits (
   store_id          text not null,
   visited_at        timestamptz not null,
   table_session_id  text,
-  order_total       integer,
   is_guest          boolean not null default false,
   created_at        timestamptz not null default now()
 );
