@@ -1,2 +1,5 @@
 .DS_Store
 *.local.js
+.env*
+*.env
+targets*.csv
