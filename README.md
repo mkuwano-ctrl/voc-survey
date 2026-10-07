@@ -24,16 +24,16 @@ intro → 01 総合（0〜10）→ 02 再来店（0〜10）→ 03 気になっ�
 
 1. Supabase で新規プロジェクトを作り、SQL Editor に `supabase/001_schema.sql` を貼って Run
 2. `config.js` の `SUPABASE_URL` と `SUPABASE_ANON_KEY` を埋める（Project Settings → API）
-3. `config.js` の `STORES.ginza1.googleReviewUrl`（Googleマップの「クチコミを書く」リンク）と `PRIVACY_URL` を埋める
-4. このフォルダをHTTPSで公開する（下記）
-5. LINE Developers → LINE Login チャネル「VOCアンケート（検証）」→ LIFF → エンドポイントURL を公開URLに変更
-6. 自分のLINEで `https://liff.line.me/2011912835-rae1buWg?s=ginza1&v=test001` を開く。初回は同意画面→友だち追加画面が出る。回答が Supabase の `survey_responses` に入ればOK
+3. `config.js` の `STORES` に店名を入れる（検証中は仮名「たこ焼きや 目黒店」）。`googleReviewUrl` は任意で、空なら完了画面の口コミリンクは出ない（今回は未接続）。`PRIVACY_URL` は設定済み
+4. このフォルダをHTTPSで公開する（下記）。現在は GitHub Pages: https://mkuwano-ctrl.github.io/voc-survey/
+5. LINE Developers → LINE Login チャネル「VOCアンケート（検証）」→ LIFF → エンドポイントURL を公開URLに変更（設定済み）
+6. 自分のLINEで `https://liff.line.me/2011912835-rae1buWg?s=meguro&v=test001` を開く。初回は同意画面→友だち追加画面が出る。回答が Supabase の `survey_responses` に入ればOK
 
 ## 公開先の候補
 
 - **Lovable**: 空のプロジェクトを作り GitHub 連携 → 連携リポジトリの `public/` にこの4ファイルを置く → Publish。公開URLは `https://<project>.lovable.app/index.html`
 - **GitHub Pages**: リポジトリ直下にこの4ファイル → Settings → Pages → Branch: main / root。公開URLは `https://<user>.github.io/<repo>/`
-- 開発中の確認: PCブラウザで `index.html?dev=1&s=ginza1` を開くと LIFF なしで画面だけ動く（UIDは `DEV_...`、`is_dev=true` で保存される）
+- 開発中の確認: PCブラウザで `index.html?dev=1&s=meguro` を開くと LIFF なしで画面だけ動く（UIDは `DEV_...`、`is_dev=true` で保存される）
 
 ## 配信URLの作り方（Messaging API から送るとき）
 

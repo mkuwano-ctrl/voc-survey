@@ -166,8 +166,10 @@
     } else if (step === "done") {
       bar.style.width = "100%";
       const name = profile.displayName ? `<span class="name">${escapeHtml(profile.displayName)} 様</span>、` : "";
-      screenEl.appendChild(h(`<div class="done"><div class="mark">🙏</div><h1>ありがとうございました</h1><p>${name}ご回答はお店の改善に役立てます。</p>
-        <a class="review" href="${store.googleReviewUrl}" target="_blank" rel="noopener">Googleマップにも感想を書く<small>よろしければ、お店を探している方のためにご感想をお寄せください</small></a></div>`));
+      const review = store.googleReviewUrl
+        ? `<a class="review" href="${store.googleReviewUrl}" target="_blank" rel="noopener">Googleマップにも感想を書く<small>よろしければ、お店を探している方のためにご感想をお寄せください</small></a>`
+        : "";
+      screenEl.appendChild(h(`<div class="done"><div class="mark">🙏</div><h1>ありがとうございました</h1><p>${name}ご回答はお店の改善に役立てます。</p>${review}</div>`));
       nextBtn.textContent = "閉じる";
     }
     refreshNext();

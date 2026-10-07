@@ -9,19 +9,15 @@ window.VOC_CONFIG = {
   SUPABASE_ANON_KEY: "REPLACE_ME",
 
   // 店舗ごとの表示情報。URL の ?s=<store_id> で切り替える。該当がなければ default を使う
+  // 検証中は仮の店名を使う（実店舗名は許諾後に設定する）
+  // googleReviewUrl が空のときは完了画面の口コミリンクを出さない
   STORES: {
-    default: {
-      name: "銀だこハイボール酒場 銀座一丁目店",
-      googleReviewUrl: "https://search.google.com/local/writereview?placeid=REPLACE_ME",
-    },
-    ginza1: {
-      name: "銀だこハイボール酒場 銀座一丁目店",
-      googleReviewUrl: "https://search.google.com/local/writereview?placeid=REPLACE_ME",
-    },
+    default: { name: "たこ焼きや 目黒店", googleReviewUrl: "" },
+    meguro: { name: "たこ焼きや 目黒店", googleReviewUrl: "" },
   },
 
-  // フッターに出すプライバシーポリシー（セルフオーダーと同じURLを流用）
-  PRIVACY_URL: "https://REPLACE_ME",
+  // フッターに出すプライバシーポリシー（セルフオーダー Ordee と同じページ）
+  PRIVACY_URL: "https://tacoms.notion.site/Ordee-2f63832077048175a13fc149c8ef5072",
 
   // ?dev=1 を付けて PC ブラウザで開いたときに LIFF を使わず画面だけ確認するモード
   ALLOW_DEV_MODE: true,
