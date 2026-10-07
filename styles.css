@@ -1,0 +1,59 @@
+:root {
+  --bg: #f6f6f4;
+  --card: #ffffff;
+  --ink: #1f2328;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --accent: #d9452b;
+  --accent-soft: #fbe9e5;
+  --ok: #1a8f5a;
+  --radius: 14px;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif; font-size: 16px; line-height: 1.5; }
+.app { min-height: 100dvh; display: flex; flex-direction: column; max-width: 520px; margin: 0 auto; }
+
+.top { position: sticky; top: 0; background: var(--bg); padding: 12px 16px 8px; z-index: 2; }
+.back { position: absolute; left: 8px; top: 8px; width: 36px; height: 36px; border: 0; background: transparent; font-size: 28px; line-height: 1; color: var(--muted); }
+.store { text-align: center; font-size: 13px; color: var(--muted); }
+.progress { height: 4px; background: var(--line); border-radius: 2px; margin-top: 10px; overflow: hidden; }
+.bar { height: 100%; width: 0; background: var(--accent); transition: width .25s ease; }
+
+.screen { flex: 1; padding: 8px 16px 24px; }
+.loading { text-align: center; color: var(--muted); padding: 48px 0; }
+
+.q { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 14px; }
+.q .num { font-size: 12px; color: var(--muted); letter-spacing: .04em; }
+.q .req { color: var(--accent); margin-left: 4px; }
+.q h2 { margin: 4px 0 0; font-size: 18px; font-weight: 700; }
+.q .hint { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+
+.scale { display: grid; grid-template-columns: repeat(11, 1fr); gap: 6px; margin: 16px 0 6px; }
+.scale button { aspect-ratio: 1; border: 1px solid var(--line); border-radius: 10px; background: var(--card); font-size: 15px; font-weight: 600; color: var(--ink); padding: 0; }
+.scale button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.scale-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+
+.choices { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.choice { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; border: 1px solid var(--line); background: var(--card); border-radius: 12px; padding: 14px 14px; font-size: 16px; color: var(--ink); }
+.choice .box { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #cfd3d8; flex: none; }
+.choice.multi .box { border-radius: 6px; }
+.choice.on { border-color: var(--accent); background: var(--accent-soft); }
+.choice.on .box { border-color: var(--accent); background: var(--accent); box-shadow: inset 0 0 0 3px #fff; }
+
+textarea, input[type=text] { width: 100%; margin-top: 14px; border: 1px solid var(--line); border-radius: 12px; padding: 12px; font-size: 16px; font-family: inherit; background: var(--card); color: var(--ink); }
+textarea { min-height: 120px; resize: vertical; }
+
+.bottom { position: sticky; bottom: 0; background: linear-gradient(to top, var(--bg) 70%, transparent); padding: 10px 16px calc(12px + env(safe-area-inset-bottom)); }
+.next { width: 100%; height: 52px; border: 0; border-radius: 14px; background: var(--accent); color: #fff; font-size: 17px; font-weight: 700; }
+.next:disabled { background: #d1d5db; color: #fff; }
+.legal { text-align: center; margin-top: 8px; font-size: 11px; }
+.legal a { color: var(--muted); }
+
+.intro, .done { text-align: center; padding: 24px 8px 8px; }
+.intro .mark, .done .mark { font-size: 48px; }
+.intro h1, .done h1 { font-size: 22px; margin: 10px 0 6px; }
+.intro p, .done p { color: var(--muted); margin: 0 0 8px; }
+.done .name { color: var(--ink); font-weight: 600; }
+.review { display: block; margin: 20px auto 0; padding: 14px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-weight: 600; }
+.review small { display: block; font-weight: 400; color: var(--muted); margin-top: 2px; }
+.error { background: #fff4f2; border: 1px solid #f5c6bd; color: #8a2a1a; padding: 12px; border-radius: 12px; font-size: 14px; }

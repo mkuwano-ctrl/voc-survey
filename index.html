@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="robots" content="noindex" />
+  <title>ご来店アンケート</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app" class="app">
+    <header class="top">
+      <button id="back" class="back" type="button" aria-label="戻る" hidden>‹</button>
+      <div class="store" id="storeName">読み込み中…</div>
+      <div class="progress"><div id="bar" class="bar"></div></div>
+    </header>
+
+    <main id="screen" class="screen">
+      <div class="loading">読み込み中…</div>
+    </main>
+
+    <footer class="bottom">
+      <button id="next" class="next" type="button" disabled>次へ</button>
+      <div class="legal"><a id="privacy" href="#" target="_blank" rel="noopener">プライバシーポリシー</a></div>
+    </footer>
+  </div>
+
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
