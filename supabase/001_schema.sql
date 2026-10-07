@@ -74,10 +74,17 @@ drop policy if exists "anon can insert response" on public.survey_responses;
 create policy "anon can insert response" on public.survey_responses
   for insert to anon with check (true);
 
--- update は response_id と client_token の両方が一致する行だけ（WHERE 句で絞る前提。uuid は推測不能）
+-- select / update は「リクエストヘッダー x-client-token の合言葉と一致する行」だけ。
+-- （条件付き UPDATE は対象行が読める必要があるため、SELECT も同じ条件で許可する。他人の行は読めない）
+drop policy if exists "anon can select own response" on public.survey_responses;
+create policy "anon can select own response" on public.survey_responses
+  for select to anon
+  using (client_token::text = (current_setting('request.headers', true)::json ->> 'x-client-token'));
 drop policy if exists "anon can update own response" on public.survey_responses;
 create policy "anon can update own response" on public.survey_responses
-  for update to anon using (true) with check (true);
+  for update to anon
+  using (client_token::text = (current_setting('request.headers', true)::json ->> 'x-client-token'))
+  with check (client_token::text = (current_setting('request.headers', true)::json ->> 'x-client-token'));
 
 -- visits / survey_sends は anon から一切触れない（ポリシーなし＝拒否）
 

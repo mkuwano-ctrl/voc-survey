@@ -34,11 +34,11 @@
   // ---- 状態 ----------------------------------------------------------------
   const answers = { q1_overall: null, q2_revisit: null, q3_issues: [], q3_detail: {}, comment: "", staff_name: "", source_channel: null };
   let responseId = crypto.randomUUID();   // 来店IDとUIDが揃えば boot() で決定的なIDに置き換える
-  const clientToken = crypto.randomUUID();
+  let clientToken = crypto.randomUUID();  // 同上。自分の行だけ読める・更新できるための合言葉（ヘッダーで送る）
 
-  // 「来店ID|UID」から毎回同じ UUID を作る。開き直しや二重読み込みでも同じ行を指す
-  async function stableResponseId(visit, uid) {
-    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`voc|${visit}|${uid}`));
+  // 「種|来店ID|UID」から毎回同じ UUID を作る。開き直しや二重読み込みでも同じ行・同じ合言葉になる
+  async function stableUuid(seed, visit, uid) {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${seed}|${visit}|${uid}`));
     const b = Array.from(new Uint8Array(buf)).slice(0, 16);
     b[6] = (b[6] & 0x0f) | 0x50; b[8] = (b[8] & 0x3f) | 0x80;   // UUID v5 風の体裁
     const hex = b.map((x) => x.toString(16).padStart(2, "0")).join("");
@@ -92,13 +92,8 @@
       is_dev: devMode,
     });
     if (!error) return;
-    if (error.code === "23505") {
-      const { error: e2 } = await supa.from("survey_responses").update({ client_token: clientToken, liff_opened_at: now }).eq("response_id", responseId);
-      if (!e2) return;
-      console.warn("reopen update failed", e2);
-    } else {
-      console.warn("insert failed", error);
-    }
+    if (error.code === "23505") return;   // 既に同じ行がある（開き直し）。合言葉も同じなので、そのまま更新できる
+    console.warn("insert failed", error);
     showError("回答の保存先に接続できませんでした。回答は続けられますが、記録されない可能性があります。");
   }
   function showError(msg) {
@@ -228,7 +223,6 @@
   // ---- 起動 ----------------------------------------------------------------
   async function boot() {
     try {
-      if (C.SUPABASE_URL && !C.SUPABASE_URL.includes("REPLACE_ME")) supa = window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY);
       if (devMode) {
         userId = "DEV_" + responseId.slice(0, 8);
       } else {
@@ -242,7 +236,14 @@
         userId = (token && token.sub) || (liff.getContext() && liff.getContext().userId) || null;
         if (!userId) throw new Error("LINEのユーザーIDを取得できませんでした");
       }
-      if (visitId && userId) responseId = await stableResponseId(visitId, userId);
+      if (visitId && userId) {
+        responseId = await stableUuid("voc-id", visitId, userId);
+        clientToken = await stableUuid("voc-token", visitId, userId);
+      }
+      // 合言葉をヘッダーで送る。DB 側は「ヘッダーの合言葉と一致する行だけ読める・更新できる」ルール
+      if (C.SUPABASE_URL && !C.SUPABASE_URL.includes("REPLACE_ME")) {
+        supa = window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY, { global: { headers: { "x-client-token": clientToken } } });
+      }
       steps = buildSteps();
       render();          // 先に画面を出す（保存先の応答を待たせない）
       createRow();       // 行の作成は裏で進める。失敗時は画面上部に注意を出す
