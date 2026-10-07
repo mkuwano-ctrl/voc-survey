@@ -67,17 +67,22 @@
   }
   async function createRow() {
     if (!supa) return;
-    const { error } = await supa.from("survey_responses").insert({
+    // 同じ人（UID）×同じ来店（visit_id）は1行にまとめる。開き直しや LIFF の二重読み込みで行が増えないようにする。
+    // 衝突したときは response_id / client_token / liff_opened_at だけ上書きし、status と回答はそのまま残す。
+    const row = {
       response_id: responseId,
       client_token: clientToken,
       visit_id: visitId,
       send_id: sendId,
       store_id: storeId,
       line_user_id: userId,
-      status: "opened",
       liff_opened_at: new Date().toISOString(),
       is_dev: devMode,
-    });
+    };
+    const canDedupe = !!(visitId && userId);
+    const { error } = canDedupe
+      ? await supa.from("survey_responses").upsert(row, { onConflict: "visit_id,line_user_id" })
+      : await supa.from("survey_responses").insert(Object.assign({ status: "opened" }, row));
     if (error) { console.warn("insert failed", error); showError("回答の保存先に接続できませんでした。回答は続けられますが、記録されない可能性があります。"); }
   }
   function showError(msg) {
@@ -204,6 +209,9 @@
       if (devMode) {
         userId = "DEV_" + responseId.slice(0, 8);
       } else {
+        // LIFF は liff.line.me 経由の初回読み込みで ?liff.state= 付きの URL を一度開き、liff.init() が本来の URL へ飛び直す。
+        // その1回目では何もせず、飛び直し後の読み込みだけで処理する（行の二重作成を防ぐ）
+        if (params.has("liff.state")) { await liff.init({ liffId: C.LIFF_ID }); return; }
         await liff.init({ liffId: C.LIFF_ID });
         if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
         // プロフィール（表示名・アイコン）は取得しない。ID トークンの sub（= LINE userId）だけを使う

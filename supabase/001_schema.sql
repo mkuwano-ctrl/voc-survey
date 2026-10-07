@@ -31,6 +31,10 @@ create table if not exists public.survey_responses (
 create index if not exists survey_responses_store_created_idx on public.survey_responses (store_id, created_at desc);
 create index if not exists survey_responses_visit_idx on public.survey_responses (visit_id);
 create index if not exists survey_responses_uid_idx on public.survey_responses (line_user_id);
+-- 同じ人×同じ来店は1行（画面側は upsert で同じ行を更新する）
+create unique index if not exists survey_responses_visit_uid_uniq
+  on public.survey_responses (visit_id, line_user_id)
+  where visit_id is not null and line_user_id is not null;
 
 -- 来店（配信対象の元。依頼C の経路から日次で入れる。Phase 1 は手動 CSV 取り込みで可）
 create table if not exists public.visits (
