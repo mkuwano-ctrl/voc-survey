@@ -33,8 +33,17 @@
 
   // ---- 状態 ----------------------------------------------------------------
   const answers = { q1_overall: null, q2_revisit: null, q3_issues: [], q3_detail: {}, comment: "", staff_name: "", source_channel: null };
-  const responseId = crypto.randomUUID();
+  let responseId = crypto.randomUUID();   // 来店IDとUIDが揃えば boot() で決定的なIDに置き換える
   const clientToken = crypto.randomUUID();
+
+  // 「来店ID|UID」から毎回同じ UUID を作る。開き直しや二重読み込みでも同じ行を指す
+  async function stableResponseId(visit, uid) {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`voc|${visit}|${uid}`));
+    const b = Array.from(new Uint8Array(buf)).slice(0, 16);
+    b[6] = (b[6] & 0x0f) | 0x50; b[8] = (b[8] & 0x3f) | 0x80;   // UUID v5 風の体裁
+    const hex = b.map((x) => x.toString(16).padStart(2, "0")).join("");
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  }
   let userId = null;
   let supa = null;
   let steps = [];     // 画面の並び（分岐で増減する）
@@ -67,8 +76,8 @@
   }
   async function createRow() {
     if (!supa) return;
-    // 同じ人（UID）×同じ来店（visit_id）は1行にまとめる。開き直しや LIFF の二重読み込みで行が増えないようにする。
-    // 衝突したときは response_id / client_token / liff_opened_at だけ上書きし、status と回答はそのまま残す。
+    // response_id は「来店ID|UID」から決定的に作っているので、開き直しや LIFF の二重読み込みでも同じ行を指す。
+    // 主キーで upsert し、衝突時は client_token / liff_opened_at だけ上書きして status と回答はそのまま残す。
     const row = {
       response_id: responseId,
       client_token: clientToken,
@@ -79,10 +88,7 @@
       liff_opened_at: new Date().toISOString(),
       is_dev: devMode,
     };
-    const canDedupe = !!(visitId && userId);
-    const { error } = canDedupe
-      ? await supa.from("survey_responses").upsert(row, { onConflict: "visit_id,line_user_id" })
-      : await supa.from("survey_responses").insert(Object.assign({ status: "opened" }, row));
+    const { error } = await supa.from("survey_responses").upsert(row, { onConflict: "response_id" });
     if (error) { console.warn("insert failed", error); showError("回答の保存先に接続できませんでした。回答は続けられますが、記録されない可能性があります。"); }
   }
   function showError(msg) {
@@ -190,7 +196,14 @@
 
   nextBtn.onclick = async () => {
     const step = steps[idx];
-    if (step === "done") { if (!devMode && window.liff && liff.isInClient()) liff.closeWindow(); else location.reload(); return; }
+    if (step === "done") {
+      if (!devMode && window.liff && liff.isInClient()) { liff.closeWindow(); return; }
+      // 閉じられない環境（外部ブラウザ・PC）では案内だけ出す。再読み込みはしない
+      screenEl.innerHTML = "";
+      screenEl.appendChild(h(`<div class="done"><div class="mark">🙏</div><h1>ご回答ありがとうございました</h1><p>この画面を閉じてください。</p></div>`));
+      nextBtn.hidden = true;
+      return;
+    }
     if (step === "q3") { // 分岐を確定し、選ばれなかった領域の詳細は消す
       for (const k of Object.keys(answers.q3_detail)) if (!answers.q3_issues.includes(k)) delete answers.q3_detail[k];
       steps = buildSteps();
@@ -219,6 +232,7 @@
         userId = (token && token.sub) || (liff.getContext() && liff.getContext().userId) || null;
         if (!userId) throw new Error("LINEのユーザーIDを取得できませんでした");
       }
+      if (visitId && userId) responseId = await stableResponseId(visitId, userId);
       steps = buildSteps();
       render();          // 先に画面を出す（保存先の応答を待たせない）
       createRow();       // 行の作成は裏で進める。失敗時は画面上部に注意を出す
