@@ -11,8 +11,7 @@ create table if not exists public.survey_responses (
   visit_id        text,                          -- 来店ID（配信URLの ?v=）
   send_id         text,                          -- 配信ID（配信URLの ?send=）
   store_id        text not null default 'default',
-  line_user_id    text,                          -- LIFF で取得した UID
-  display_name    text,                          -- LIFF で取得した表示名
+  line_user_id    text,                          -- LIFF で取得した UID（表示名などのプロフィールは取得・保存しない）
   status          text not null default 'opened', -- opened / started / in_progress / completed
   last_step       text,
   q1_overall      smallint check (q1_overall between 0 and 10),

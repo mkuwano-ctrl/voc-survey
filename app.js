@@ -1,5 +1,5 @@
 /* VOC アンケート 回答画面（LIFF）
- * - LINE の中で開くと UID と表示名を自動で取る。客に入力させる項目はない
+ * - LINE の中で開くと UID だけを自動で取る（表示名などのプロフィールは取得しない）。客に入力させる項目はない
  * - 1画面1問。必須に答えるまで「次へ」は押せない
  * - 1問答えるごとに Supabase に保存する（途中離脱でもそこまで残る）
  * - URL パラメータ: v=来店ID, s=店舗ID, send=配信ID, dev=1（PCでの画面確認）
@@ -35,7 +35,7 @@
   const answers = { q1_overall: null, q2_revisit: null, q3_issues: [], q3_detail: {}, comment: "", staff_name: "", source_channel: null };
   const responseId = crypto.randomUUID();
   const clientToken = crypto.randomUUID();
-  let profile = { userId: null, displayName: "" };
+  let userId = null;
   let supa = null;
   let steps = [];     // 画面の並び（分岐で増減する）
   let idx = 0;
@@ -73,8 +73,7 @@
       visit_id: visitId,
       send_id: sendId,
       store_id: storeId,
-      line_user_id: profile.userId,
-      display_name: profile.displayName,
+      line_user_id: userId,
       status: "opened",
       liff_opened_at: new Date().toISOString(),
       user_agent: navigator.userAgent,
@@ -165,17 +164,15 @@
       nextBtn.textContent = "送信する";
     } else if (step === "done") {
       bar.style.width = "100%";
-      const name = profile.displayName ? `<span class="name">${escapeHtml(profile.displayName)} 様</span>、` : "";
       const review = store.googleReviewUrl
         ? `<a class="review" href="${store.googleReviewUrl}" target="_blank" rel="noopener">Googleマップにも感想を書く<small>よろしければ、お店を探している方のためにご感想をお寄せください</small></a>`
         : "";
-      screenEl.appendChild(h(`<div class="done"><div class="mark">🙏</div><h1>ありがとうございました</h1><p>${name}ご回答はお店の改善に役立てます。</p>${review}</div>`));
+      screenEl.appendChild(h(`<div class="done"><div class="mark">🙏</div><h1>ありがとうございました</h1><p>ご回答はお店の改善に役立てます。</p>${review}</div>`));
       nextBtn.textContent = "閉じる";
     }
     refreshNext();
     window.scrollTo(0, 0);
   }
-  function escapeHtml(s) { return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 
   function refreshNext() {
     const step = steps[idx];
@@ -206,12 +203,14 @@
     try {
       if (C.SUPABASE_URL && !C.SUPABASE_URL.includes("REPLACE_ME")) supa = window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY);
       if (devMode) {
-        profile = { userId: "DEV_" + responseId.slice(0, 8), displayName: "テスト 太郎" };
+        userId = "DEV_" + responseId.slice(0, 8);
       } else {
         await liff.init({ liffId: C.LIFF_ID });
         if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
-        const p = await liff.getProfile();
-        profile = { userId: p.userId, displayName: p.displayName };
+        // プロフィール（表示名・アイコン）は取得しない。ID トークンの sub（= LINE userId）だけを使う
+        const token = liff.getDecodedIDToken();
+        userId = (token && token.sub) || (liff.getContext() && liff.getContext().userId) || null;
+        if (!userId) throw new Error("LINEのユーザーIDを取得できませんでした");
       }
       steps = buildSteps();
       render();          // 先に画面を出す（保存先の応答を待たせない）
