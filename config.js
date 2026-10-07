@@ -5,8 +5,8 @@ window.VOC_CONFIG = {
   LIFF_ID: "2011912835-rae1buWg",
 
   // Supabase（VOC用プロジェクト）。anon key は公開用の鍵なのでここに置いてよい
-  SUPABASE_URL: "https://REPLACE_ME.supabase.co",
-  SUPABASE_ANON_KEY: "REPLACE_ME",
+  SUPABASE_URL: "https://llhdhcrwghhpznrrzqfz.supabase.co",
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxsaGRoY3J3Z2hocHpucnJ6cWZ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEzNTYzMzQsImV4cCI6MjEwNjkzMjMzNH0.3qc6LbqLRxukr2AxRuz1pDIEiLVJJ1N-bCX6SB8RM6I",
 
   // 店舗ごとの表示情報。URL の ?s=<store_id> で切り替える。該当がなければ default を使う
   // 検証中は仮の店名を使う（実店舗名は許諾後に設定する）
