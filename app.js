@@ -242,7 +242,11 @@
       }
       // 合言葉をヘッダーで送る。DB 側は「ヘッダーの合言葉と一致する行だけ読める・更新できる」ルール
       if (C.SUPABASE_URL && !C.SUPABASE_URL.includes("REPLACE_ME")) {
-        supa = window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY, { global: { headers: { "x-client-token": clientToken } } });
+        supa = window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY, {
+          global: { headers: { "x-client-token": clientToken } },
+          // 回答画面は常に「客（anon）」として動く。同じドメインにあるダッシュボードのログイン情報を拾わない・保存しない
+          auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+        });
       }
       steps = buildSteps();
       render();          // 先に画面を出す（保存先の応答を待たせない）

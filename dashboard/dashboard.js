@@ -18,7 +18,7 @@
   // ---- 認証 ----------------------------------------------------------------
   async function boot() {
     if (demo) { $("demoBanner").hidden = false; $("shell").hidden = false; $("who").textContent = "サンプル表示"; seedDemo(); applyFilters(); return; }
-    supa = window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY);
+    supa = window.supabase.createClient(C.SUPABASE_URL, C.SUPABASE_ANON_KEY, { auth: { storageKey: "voc-dashboard-auth" } });
     const { data: { session } } = await supa.auth.getSession();
     if (session) enter(session); else $("login").hidden = false;
     supa.auth.onAuthStateChange((_e, s) => { if (s && $("shell").hidden) enter(s); });
