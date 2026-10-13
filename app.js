@@ -10,7 +10,9 @@
   const screenEl = $("screen"), nextBtn = $("next"), backBtn = $("back"), bar = $("bar");
 
   const params = new URLSearchParams(location.search);
-  const visitId = params.get("v") || null;
+  // 来店ID。配信URLに ?v= がない（LINE公式アカウントの固定URL配信など）場合は、
+  // 「回答日の前日（日本時間）」を来店日とみなして auto-YYYYMMDD を使う。1人1日1行になり、後から来店記録と突合できる
+  const visitId = params.get("v") || ("auto-" + (function () { const d = new Date(Date.now() + 9 * 36e5 - 864e5); return d.toISOString().slice(0, 10).replace(/-/g, ""); })());
   const sendId = params.get("send") || null;
   const storeId = params.get("s") || "default";
   const store = C.STORES[storeId] || C.STORES.default;

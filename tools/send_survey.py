@@ -29,6 +29,7 @@ from datetime import datetime, timezone
 LIFF_ID = "2011912835-rae1buWg"
 HOLDOUT_PERCENT = 10
 PUSH_URL = "https://api.line.me/v2/bot/message/push"
+CARD_IMAGE_URL = "https://mkuwano-ctrl.github.io/voc-survey/assets/card_thanks.png"  # GitHub Pages に置いた画像（HTTPS 必須）
 
 
 def liff_url(store_id, visit_id, send_id):
@@ -42,6 +43,7 @@ def build_message(url):
         "altText": "ご来店ありがとうございました。30秒で終わるアンケートにご協力ください",
         "contents": {
             "type": "bubble",
+            "hero": {"type": "image", "url": CARD_IMAGE_URL, "size": "full", "aspectRatio": "20:13", "aspectMode": "cover", "action": {"type": "uri", "uri": url}},
             "body": {
                 "type": "box", "layout": "vertical", "spacing": "md",
                 "contents": [
