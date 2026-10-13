@@ -152,7 +152,7 @@
     bar.style.width = `${Math.max(0, Math.min(100, ((idx) / (qTotal + 1)) * 100))}%`;
 
     if (step === "intro") {
-      screenEl.appendChild(h(`<div class="intro"><div class="mark">🍽️</div><h1>ご来店ありがとうございました</h1><p>${store.name}</p><p>30秒で終わる3問のアンケートです。<br>よろしければ昨日のご感想をお聞かせください。</p><p class="notice">ご回答はお店の改善にのみ使い、個人へのご連絡や営業には使いません。お名前などの入力は不要です。</p></div>`));
+      screenEl.appendChild(h(`<div class="intro"><div class="mark">🍽️</div><h1>昨日はご来店<br>ありがとうございました</h1><p>${store.name}</p><p>30秒で終わる3問のアンケートです。<br>よろしければ昨日のご感想をお聞かせください。</p><p class="notice">ご回答はお店の改善にのみ使い、個人へのご連絡や営業には使いません。お名前などの入力は不要です。</p></div>`));
       nextBtn.textContent = "アンケートに答える";
     } else if (step === "q1") {
       const q = h(`<div class="q">${qHead("01", "昨日のご来店は、全体としていかがでしたか？", "0（とても不満）〜 10（とても満足）でお選びください", true)}</div>`);

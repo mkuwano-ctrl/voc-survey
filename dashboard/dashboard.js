@@ -81,7 +81,7 @@
     if (stores.includes(cur)) sel.value = cur;
     render();
   }
-  ["storeSel", "rangeSel", "includeDev", "fromDate", "toDate", "lowOnly"].forEach((id) => { $(id).onchange = () => { $("customRange").hidden = $("rangeSel").value !== "custom"; if (!demo && ["rangeSel", "fromDate", "toDate"].includes(id)) load(); else render(); }; });
+  ["storeSel", "rangeSel", "includeDev", "fromDate", "toDate", "lowOnly", "allRows"].forEach((id) => { $(id).onchange = () => { $("customRange").hidden = $("rangeSel").value !== "custom"; if (!demo && ["rangeSel", "fromDate", "toDate"].includes(id)) load(); else render(); }; });
 
   // ---- 集計 ----------------------------------------------------------------
   const avg = (arr) => arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : null;
@@ -201,9 +201,10 @@
 
   function renderComments(rs) {
     const low = $("lowOnly").checked;
-    const rows = rs.filter((x) => x.status === "completed" && (x.comment || x.staff_name)).filter((x) => !low || (x.q1_overall !== null && x.q1_overall <= 6));
-    $("commentTable").innerHTML = `<thead><tr><th>日時</th><th>店舗</th><th class="num">総合</th><th class="num">再来店</th><th>気になった点</th><th>コメント</th><th>スタッフ</th></tr></thead><tbody>` +
-      (rows.length ? rows.map((x) => `<tr><td>${fmtDate(x.answered_at || x.created_at)}</td><td>${STORE_NAME(x.store_id)}</td><td class="num">${fmt(x.q1_overall)}</td><td class="num">${fmt(x.q2_revisit)}</td><td class="wrap">${(x.q3_issues || []).map((i) => esc(i) + (x.q3_detail && x.q3_detail[i] ? `（${esc(x.q3_detail[i])}）` : "")).join("、") || "–"}</td><td class="wrap">${esc(x.comment || "")}</td><td>${esc(x.staff_name || "")}</td></tr>`).join("") : `<tr><td colspan="7" class="empty">コメントはありません</td></tr>`) + `</tbody>`;
+    const all = $("allRows").checked;
+    const rows = rs.filter((x) => x.status === "completed" && (all || x.comment || x.staff_name)).filter((x) => !low || (x.q1_overall !== null && x.q1_overall <= 6));
+    $("commentTable").innerHTML = `<thead><tr><th>日時</th><th>店舗</th><th>来店ID</th><th class="num">総合</th><th class="num">再来店</th><th>気になった点</th><th>コメント</th><th>スタッフ</th><th>配信ID</th></tr></thead><tbody>` +
+      (rows.length ? rows.map((x) => `<tr><td>${fmtDate(x.answered_at || x.created_at)}</td><td>${STORE_NAME(x.store_id)}</td><td>${esc(x.visit_id || "–")}</td><td class="num">${fmt(x.q1_overall)}</td><td class="num">${fmt(x.q2_revisit)}</td><td class="wrap">${(x.q3_issues || []).map((i) => esc(i) + (x.q3_detail && x.q3_detail[i] ? `（${esc(x.q3_detail[i])}）` : "")).join("、") || "–"}</td><td class="wrap">${esc(x.comment || "")}</td><td>${esc(x.staff_name || "")}</td><td class="muted small">${x.send_id ? esc(String(x.send_id).slice(0, 8)) + "…" : "–"}</td></tr>`).join("") : `<tr><td colspan="9" class="empty">該当する回答はありません</td></tr>`) + `</tbody>`;
   }
 
   function renderTrend(rs, ss) {

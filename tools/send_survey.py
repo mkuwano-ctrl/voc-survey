@@ -40,14 +40,14 @@ def build_message(url):
     """画像なし・文言＋ボタン1つのカード（Flex）。画像を使う場合は hero を足す。"""
     return {
         "type": "flex",
-        "altText": "ご来店ありがとうございました。30秒で終わるアンケートにご協力ください",
+        "altText": "昨日はご来店ありがとうございました。30秒で終わるアンケートにご協力ください",
         "contents": {
             "type": "bubble",
             "hero": {"type": "image", "url": CARD_IMAGE_URL, "size": "full", "aspectRatio": "20:13", "aspectMode": "cover", "action": {"type": "uri", "uri": url}},
             "body": {
                 "type": "box", "layout": "vertical", "spacing": "md",
                 "contents": [
-                    {"type": "text", "text": "ご来店ありがとうございました", "weight": "bold", "size": "lg", "wrap": True},
+                    {"type": "text", "text": "昨日はご来店ありがとうございました", "weight": "bold", "size": "lg", "wrap": True},
                     {"type": "text", "text": "お客様により良い時間をお届けするため、30秒で終わるアンケートにご協力ください。", "size": "sm", "color": "#666666", "wrap": True},
                 ],
             },
