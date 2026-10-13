@@ -34,6 +34,7 @@
     $("loginBtn").disabled = false;
     if (error) { $("loginError").textContent = "ログインできませんでした。メールアドレスとパスワードを確認してください。"; $("loginError").hidden = false; }
   };
+  $("reloadBtn").onclick = () => load();
   $("logout").onclick = async () => { if (supa) await supa.auth.signOut(); location.reload(); };
 
   // ---- 期間 ----------------------------------------------------------------
