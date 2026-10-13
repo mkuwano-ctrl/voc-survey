@@ -94,7 +94,7 @@
     if (!error) return;
     if (error.code === "23505") return;   // 既に同じ行がある（開き直し）。合言葉も同じなので、そのまま更新できる
     console.warn("insert failed", error);
-    showError("回答の保存先に接続できませんでした。回答は続けられますが、記録されない可能性があります。");
+    showError("回答の保存先に接続できませんでした。回答は続けられますが、記録されない可能性があります。（" + (error.code || "") + " " + (error.message || "") + "）");
   }
   function showError(msg) {
     const e = document.createElement("div"); e.className = "error"; e.textContent = msg; screenEl.prepend(e);
