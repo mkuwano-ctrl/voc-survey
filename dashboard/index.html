@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>VOC ダッシュボード</title>
+  <link rel="stylesheet" href="dashboard.css?v=20261007a" />
+</head>
+<body>
+  <!-- ログイン -->
+  <section id="login" class="login" hidden>
+    <form id="loginForm" class="login-card">
+      <h1>VOC ダッシュボード</h1>
+      <p class="muted">来店翌日アンケートの回収結果を見る画面です。ログインしてください。</p>
+      <label>メールアドレス<input id="email" type="email" autocomplete="username" required /></label>
+      <label>パスワード<input id="password" type="password" autocomplete="current-password" required /></label>
+      <button id="loginBtn" type="submit">ログイン</button>
+      <p id="loginError" class="error" hidden></p>
+      <p class="muted small">ログイン情報は管理者（tacoms）が発行します。</p>
+    </form>
+  </section>
+
+  <!-- 本体 -->
+  <div id="shell" class="shell" hidden>
+    <aside class="side">
+      <div class="brand">VOC<span>ダッシュボード</span></div>
+      <nav>
+        <button data-view="overview" class="on">店舗スコア一覧</button>
+        <button data-view="detail">店舗詳細</button>
+        <button data-view="comments">コメント一覧</button>
+        <button data-view="trend">スコア推移</button>
+      </nav>
+      <div class="side-foot">
+        <span id="who" class="muted small"></span>
+        <button id="logout" class="link">ログアウト</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div id="demoBanner" class="banner" hidden>サンプルデータを表示しています（実データではありません）</div>
+
+      <div class="filters">
+        <label>店舗
+          <select id="storeSel"><option value="">すべての店舗</option></select>
+        </label>
+        <label>期間
+          <select id="rangeSel">
+            <option value="7">過去7日</option>
+            <option value="30" selected>過去30日</option>
+            <option value="90">過去90日</option>
+            <option value="custom">期間を指定</option>
+          </select>
+        </label>
+        <span id="customRange" class="custom" hidden>
+          <input id="fromDate" type="date" /> 〜 <input id="toDate" type="date" />
+        </span>
+        <label class="chk"><input id="includeDev" type="checkbox" /> テスト回答を含める</label>
+        <button id="csvBtn" class="secondary">CSVダウンロード</button>
+        <span id="status" class="muted small"></span>
+      </div>
+
+      <!-- 店舗スコア一覧 -->
+      <section id="view-overview" class="view">
+        <div class="tiles" id="kpiTiles"></div>
+        <div class="card">
+          <div class="card-head">
+            <h2>店舗別スコア</h2>
+            <div class="legend">
+              <span class="g gS">S 90〜</span><span class="g gA">A 80〜89</span><span class="g gB">B 70〜79</span><span class="g gC">C 60〜69</span><span class="g gD">D 〜59</span>
+              <span class="muted small">（0〜10点の平均を10倍して100点換算）</span>
+            </div>
+          </div>
+          <div class="table-wrap"><table id="storeTable"></table></div>
+        </div>
+      </section>
+
+      <!-- 店舗詳細 -->
+      <section id="view-detail" class="view" hidden>
+        <div class="tabs" id="detailTabs">
+          <button data-tab="report" class="on">レポート</button>
+          <button data-tab="overall">総合満足</button>
+          <button data-tab="revisit">再来店意向</button>
+          <button data-tab="issues">気になった点</button>
+        </div>
+        <div id="tab-report" class="tab">
+          <div class="tiles" id="detailTiles"></div>
+          <div class="grid2">
+            <div class="card"><h3>気になった点の内訳</h3><canvas id="issuesChart" height="220"></canvas></div>
+            <div class="card"><h3>お店を知ったきっかけ</h3><canvas id="sourceChart" height="220"></canvas></div>
+          </div>
+          <div class="card"><h3>良い対応をしてくれたスタッフ</h3><div id="staffList" class="chips"></div></div>
+        </div>
+        <div id="tab-overall" class="tab" hidden>
+          <div class="grid2">
+            <div class="card"><h3>総合満足の分布（0〜10）</h3><canvas id="overallDist" height="220"></canvas></div>
+            <div class="card"><h3>点数ごとの「気になった点」</h3><div id="overallByScore" class="table-wrap"></div></div>
+          </div>
+        </div>
+        <div id="tab-revisit" class="tab" hidden>
+          <div class="grid2">
+            <div class="card"><h3>再来店意向の分布（0〜10）</h3><canvas id="revisitDist" height="220"></canvas></div>
+            <div class="card"><h3>推奨者・中立者・批判者</h3><div id="npsBox"></div></div>
+          </div>
+        </div>
+        <div id="tab-issues" class="tab" hidden>
+          <div id="issueDetail" class="grid2"></div>
+        </div>
+      </section>
+
+      <!-- コメント一覧 -->
+      <section id="view-comments" class="view" hidden>
+        <div class="card">
+          <div class="card-head">
+            <h2>コメント一覧</h2>
+            <label class="chk"><input id="lowOnly" type="checkbox" /> 低評価（総合6点以下）のみ</label>
+          </div>
+          <div class="table-wrap"><table id="commentTable"></table></div>
+        </div>
+      </section>
+
+      <!-- スコア推移 -->
+      <section id="view-trend" class="view" hidden>
+        <div class="card"><h3>週ごとの平均点（総合・再来店）</h3><canvas id="trendChart" height="240"></canvas></div>
+        <div class="card"><h3>週ごとの回答数と回答率</h3><canvas id="volumeChart" height="200"></canvas></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="../config.js?v=20261007f"></script>
+  <script src="dashboard.js?v=20261007a"></script>
+</body>
+</html>
