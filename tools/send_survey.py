@@ -29,7 +29,7 @@ from datetime import datetime, timezone
 LIFF_ID = "2011912835-rae1buWg"
 HOLDOUT_PERCENT = 10
 PUSH_URL = "https://api.line.me/v2/bot/message/push"
-CARD_IMAGE_URL = "https://mkuwano-ctrl.github.io/voc-survey/assets/card_thanks.png"  # GitHub Pages に置いた画像（HTTPS 必須）
+CARD_IMAGE_URL = "https://mkuwano-ctrl.github.io/voc-survey/assets/card_thanks.png?v=2"  # GitHub Pages に置いた画像（HTTPS 必須）
 
 
 def liff_url(store_id, visit_id, send_id):
