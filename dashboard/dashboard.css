@@ -68,6 +68,7 @@ tr.clickable { cursor: pointer; } tr.clickable:hover { background: #fafafa; }
 .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); margin-bottom: 14px; overflow-x: auto; }
 .tabs button { background: none; border: 0; border-bottom: 2px solid transparent; padding: 8px 12px; color: var(--muted); white-space: nowrap; }
 .tabs button.on { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
+.chart { position: relative; width: 100%; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip { background: var(--accent-soft); color: #7a2415; padding: 4px 10px; border-radius: 999px; font-size: 13px; }
 .nps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }

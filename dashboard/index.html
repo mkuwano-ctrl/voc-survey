@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex" />
   <title>VOC ダッシュボード</title>
-  <link rel="stylesheet" href="dashboard.css?v=20261013a" />
+  <link rel="stylesheet" href="dashboard.css?v=20261013b" />
 </head>
 <body>
   <!-- ログイン -->
@@ -86,20 +86,20 @@
         <div id="tab-report" class="tab">
           <div class="tiles" id="detailTiles"></div>
           <div class="grid2">
-            <div class="card"><h3>気になった点の内訳</h3><canvas id="issuesChart" height="220"></canvas></div>
-            <div class="card"><h3>お店を知ったきっかけ</h3><canvas id="sourceChart" height="220"></canvas></div>
+            <div class="card"><h3>気になった点の内訳</h3><div class="chart" style="height:220px"><canvas id="issuesChart"></canvas></div></div>
+            <div class="card"><h3>お店を知ったきっかけ</h3><div class="chart" style="height:220px"><canvas id="sourceChart"></canvas></div></div>
           </div>
           <div class="card"><h3>良い対応をしてくれたスタッフ</h3><div id="staffList" class="chips"></div></div>
         </div>
         <div id="tab-overall" class="tab" hidden>
           <div class="grid2">
-            <div class="card"><h3>総合満足の分布（0〜10）</h3><canvas id="overallDist" height="220"></canvas></div>
+            <div class="card"><h3>総合満足の分布（0〜10）</h3><div class="chart" style="height:220px"><canvas id="overallDist"></canvas></div></div>
             <div class="card"><h3>点数ごとの「気になった点」</h3><div id="overallByScore" class="table-wrap"></div></div>
           </div>
         </div>
         <div id="tab-revisit" class="tab" hidden>
           <div class="grid2">
-            <div class="card"><h3>再来店意向の分布（0〜10）</h3><canvas id="revisitDist" height="220"></canvas></div>
+            <div class="card"><h3>再来店意向の分布（0〜10）</h3><div class="chart" style="height:220px"><canvas id="revisitDist"></canvas></div></div>
             <div class="card"><h3>推奨者・中立者・批判者</h3><div id="npsBox"></div></div>
           </div>
         </div>
@@ -121,8 +121,8 @@
 
       <!-- スコア推移 -->
       <section id="view-trend" class="view" hidden>
-        <div class="card"><h3>週ごとの平均点（総合・再来店）</h3><canvas id="trendChart" height="240"></canvas></div>
-        <div class="card"><h3>週ごとの回答数と回答率</h3><canvas id="volumeChart" height="200"></canvas></div>
+        <div class="card"><h3>週ごとの平均点（総合・再来店）</h3><div class="chart" style="height:240px"><canvas id="trendChart"></canvas></div></div>
+        <div class="card"><h3>週ごとの回答数と回答率</h3><div class="chart" style="height:200px"><canvas id="volumeChart"></canvas></div></div>
       </section>
     </main>
   </div>
@@ -130,6 +130,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script src="../config.js?v=20261007f"></script>
-  <script src="dashboard.js?v=20261013a"></script>
+  <script src="dashboard.js?v=20261013b"></script>
 </body>
 </html>
