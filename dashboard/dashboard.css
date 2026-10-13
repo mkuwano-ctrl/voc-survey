@@ -4,6 +4,7 @@
   --gS: #1a8f5a; --gA: #4f9d3a; --gB: #c9a227; --gC: #e07b39; --gD: #c0392b;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif; font-size: 14px; line-height: 1.5; }
 h1, h2, h3 { margin: 0; font-weight: 700; }
 h2 { font-size: 16px; } h3 { font-size: 14px; margin-bottom: 10px; }
