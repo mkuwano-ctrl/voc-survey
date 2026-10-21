@@ -9,10 +9,10 @@
   const params = new URLSearchParams(location.search);
   const demo = params.get("demo") === "1";
   const ISSUES = ["料理の味", "量や価格", "提供の速さ", "接客", "清潔さ", "注文のしやすさ", "特になし"];
-  const STORE_NAME = (id) => (C.STORES[id] && C.STORES[id].name) || id;
+  const STORE_NAME = (id) => { const st = settings.find((x) => x.store_id === id); return (st && st.store_name) || (C.STORES[id] && C.STORES[id].name) || id; };
   const COLORS = { accent: "#d9452b", soft: "#f3b7ab", ink: "#1f2328", muted: "#9ca3af", blue: "#3b6fb6" };
 
-  let supa = null, responses = [], sends = [], charts = {};
+  let supa = null, responses = [], sends = [], settings = [], charts = {};
   let view = "overview", tab = "report";
 
   // ---- 認証 ----------------------------------------------------------------
@@ -61,6 +61,8 @@
       .gte("scheduled_at", from.toISOString()).lte("scheduled_at", to.toISOString()).limit(20000);
     if (r.error) { $("status").textContent = "回答を読めませんでした: " + r.error.message; responses = []; } else responses = r.data || [];
     sends = s.error ? [] : (s.data || []);
+    const st = await supa.from("store_settings").select("*").order("store_id");
+    settings = st.error ? [] : (st.data || []);
     $("status").textContent = "";
     applyFilters();
   }
@@ -75,7 +77,7 @@
     return { rs, ss };
   }
   function applyFilters() {
-    const stores = [...new Set(responses.map((x) => x.store_id).concat(sends.map((x) => x.store_id)))].sort();
+    const stores = [...new Set(responses.map((x) => x.store_id).concat(sends.map((x) => x.store_id), settings.map((x) => x.store_id)))].sort();
     const sel = $("storeSel"); const cur = sel.value;
     sel.innerHTML = '<option value="">すべての店舗</option>' + stores.map((id) => `<option value="${id}">${STORE_NAME(id)}</option>`).join("");
     if (stores.includes(cur)) sel.value = cur;
@@ -130,6 +132,7 @@
     if (view === "detail") renderDetail(rs, ss);
     if (view === "comments") renderComments(rs);
     if (view === "trend") renderTrend(rs, ss);
+    if (view === "settings") renderSettings();
   }
   document.querySelectorAll(".side nav button").forEach((b) => { b.onclick = () => { view = b.dataset.view; render(); }; });
   document.querySelectorAll("#detailTabs button").forEach((b) => { b.onclick = () => { tab = b.dataset.tab; render(); }; });
@@ -223,6 +226,45 @@
     ]);
   }
 
+  // ---- 店舗設定 ----------------------------------------------------------------
+  function renderSettings() {
+    const T = $("settingsTable");
+    const hours = [...Array(24).keys()];
+    T.innerHTML = `<thead><tr><th>店舗ID</th><th>店舗名</th><th>ブランド</th><th>アンケート配信</th><th class="num">ホールドアウト%</th><th>配信時刻</th><th>再来店販促（将来）</th><th>メモ</th></tr></thead><tbody>` +
+      (settings.length ? settings.map((st) => `<tr data-id="${esc(st.store_id)}">
+        <td><code>${esc(st.store_id)}</code></td>
+        <td><input data-k="store_name" type="text" value="${esc(st.store_name || "")}" /></td>
+        <td><input data-k="brand" type="text" value="${esc(st.brand || "")}" style="width:110px" /></td>
+        <td><label class="chk"><input data-k="survey_enabled" type="checkbox" ${st.survey_enabled ? "checked" : ""} /> ${st.survey_enabled ? "送る" : "止める"}</label></td>
+        <td class="num"><input data-k="holdout_percent" type="number" min="0" max="50" value="${st.holdout_percent}" style="width:70px" /></td>
+        <td><select data-k="send_hour_jst">${hours.map((hh) => `<option value="${hh}" ${hh === st.send_hour_jst ? "selected" : ""}>${hh}:00</option>`).join("")}</select></td>
+        <td><label class="chk"><input data-k="marketing_enabled" type="checkbox" ${st.marketing_enabled ? "checked" : ""} /> ${st.marketing_enabled ? "打って良い" : "止める"}</label></td>
+        <td><input data-k="note" type="text" value="${esc(st.note || "")}" style="width:160px" /></td>
+      </tr>`).join("") : `<tr><td colspan="8" class="empty">店舗がまだ登録されていません。下の「店舗を追加」から登録してください</td></tr>`) + `</tbody>`;
+    T.querySelectorAll("input, select").forEach((el) => {
+      el.onchange = async () => {
+        const tr = el.closest("tr"), id = tr.dataset.id, k = el.dataset.k;
+        let v = el.type === "checkbox" ? el.checked : el.value;
+        if (k === "holdout_percent" || k === "send_hour_jst") v = Number(v);
+        if (demo) { $("settingsStatus").textContent = "サンプル表示では保存しません"; return; }
+        const { error } = await supa.from("store_settings").update({ [k]: v, updated_at: new Date().toISOString() }).eq("store_id", id);
+        if (error) { $("settingsStatus").textContent = "保存できませんでした: " + error.message; return; }
+        const row = settings.find((x) => x.store_id === id); if (row) row[k] = v;
+        $("settingsStatus").textContent = `${STORE_NAME(id)} の設定を保存しました（${fmtDate(new Date())}）`;
+        if (el.type === "checkbox") renderSettings();
+      };
+    });
+  }
+  $("addStoreForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const row = { store_id: $("newStoreId").value.trim(), store_name: $("newStoreName").value.trim(), brand: $("newBrand").value.trim() || null };
+    if (demo) { settings.push(Object.assign({ survey_enabled: true, holdout_percent: 10, send_hour_jst: 12, marketing_enabled: false }, row)); renderSettings(); return; }
+    const { error } = await supa.from("store_settings").insert(row);
+    if (error) { $("settingsStatus").textContent = "追加できませんでした: " + error.message; return; }
+    $("newStoreId").value = ""; $("newStoreName").value = ""; $("newBrand").value = "";
+    await load(); view = "settings"; render();
+  };
+
   // ---- Chart.js ラッパー --------------------------------------------------------
   function mk(id, cfg) { if (charts[id]) charts[id].destroy(); charts[id] = new Chart($(id).getContext("2d"), cfg); }
   const base = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true, ticks: { precision: 0 } } } };
@@ -274,6 +316,11 @@
       });
     }
     C.STORES.shibuya = { name: "たこ焼きや 渋谷店" }; C.STORES.ebisu = { name: "たこ焼きや 恵比寿店" };
+    settings = [
+      { store_id: "meguro", store_name: "たこ焼きや 目黒店", brand: "takoyakiya", survey_enabled: true, holdout_percent: 10, send_hour_jst: 12, marketing_enabled: false, note: "" },
+      { store_id: "shibuya", store_name: "たこ焼きや 渋谷店", brand: "takoyakiya", survey_enabled: true, holdout_percent: 10, send_hour_jst: 12, marketing_enabled: false, note: "" },
+      { store_id: "ebisu", store_name: "たこ焼きや 恵比寿店", brand: "takoyakiya", survey_enabled: false, holdout_percent: 10, send_hour_jst: 12, marketing_enabled: false, note: "改装中のため停止" },
+    ];
   }
   function clamp(v) { return Math.max(0, Math.min(10, v)); }
   function mulberry(a) { return function () { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }

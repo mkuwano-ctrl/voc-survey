@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex" />
   <title>VOC ダッシュボード</title>
-  <link rel="stylesheet" href="dashboard.css?v=20261013b" />
+  <link rel="stylesheet" href="dashboard.css?v=20261021a" />
 </head>
 <body>
   <!-- ログイン -->
@@ -30,6 +30,7 @@
         <button data-view="detail">店舗詳細</button>
         <button data-view="comments">コメント一覧</button>
         <button data-view="trend">スコア推移</button>
+        <button data-view="settings">店舗設定</button>
       </nav>
       <div class="side-foot">
         <span id="who" class="muted small"></span>
@@ -120,6 +121,28 @@
         </div>
       </section>
 
+      <!-- 店舗設定 -->
+      <section id="view-settings" class="view" hidden>
+        <div class="card">
+          <div class="card-head">
+            <h2>店舗ごとの配信設定</h2>
+            <span class="muted small">変更はすぐ保存されます。配信スクリプトは実行時にこの設定を読みます</span>
+          </div>
+          <div class="table-wrap"><table id="settingsTable"></table></div>
+          <p id="settingsStatus" class="muted small"></p>
+        </div>
+        <div class="card">
+          <h3>店舗を追加</h3>
+          <form id="addStoreForm" class="filters" style="margin:0">
+            <label>店舗ID <input id="newStoreId" type="text" placeholder="例: shibuya" pattern="[a-z0-9_-]+" required /></label>
+            <label>店舗名 <input id="newStoreName" type="text" placeholder="例: たこ焼きや 渋谷店" required /></label>
+            <label>ブランド <input id="newBrand" type="text" placeholder="例: takoyakiya" /></label>
+            <button type="submit" class="secondary">追加</button>
+          </form>
+          <p class="muted small" style="margin:8px 0 0">店舗IDは配信URLの <code>?s=</code> と対象者CSVの store_id に使う英数字です。後から変えられません。</p>
+        </div>
+      </section>
+
       <!-- スコア推移 -->
       <section id="view-trend" class="view" hidden>
         <div class="card"><h3>週ごとの平均点（総合・再来店）</h3><div class="chart" style="height:240px"><canvas id="trendChart"></canvas></div></div>
@@ -131,6 +154,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   <script src="../config.js?v=20261013b"></script>
-  <script src="dashboard.js?v=20261013e"></script>
+  <script src="dashboard.js?v=20261021a"></script>
 </body>
 </html>

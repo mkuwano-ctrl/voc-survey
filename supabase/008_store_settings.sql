@@ -25,6 +25,10 @@ drop policy if exists "authenticated can update store settings" on public.store_
 create policy "authenticated can update store settings" on public.store_settings
   for update to authenticated using (true) with check (true);
 
+drop policy if exists "authenticated can insert store settings" on public.store_settings;
+create policy "authenticated can insert store settings" on public.store_settings
+  for insert to authenticated with check (true);
+
 -- 検証用の初期値
 insert into public.store_settings (store_id, store_name, brand, survey_enabled)
 values ('meguro', 'たこ焼きや 目黒店', 'takoyakiya', true)
