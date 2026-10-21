@@ -62,9 +62,9 @@ def build_message(url):
     }
 
 
-def is_holdout(visit_id, user_id):
+def is_holdout(visit_id, user_id, percent=HOLDOUT_PERCENT):
     h = hashlib.sha256(f"{visit_id}|{user_id}".encode()).hexdigest()
-    return int(h[:8], 16) % 100 < HOLDOUT_PERCENT
+    return int(h[:8], 16) % 100 < percent
 
 
 def push(token, user_id, message):
@@ -78,6 +78,20 @@ def push(token, user_id, message):
             return r.status, r.read().decode()
     except urllib.error.HTTPError as e:
         return e.code, e.read().decode()
+
+
+def load_store_settings(supabase_url, service_key):
+    """store_settings 表を読む。失敗したら空（＝全店 ON 扱い）で続ける"""
+    if not (supabase_url and service_key):
+        return {}
+    req = urllib.request.Request(f"{supabase_url}/rest/v1/store_settings?select=store_id,survey_enabled,holdout_percent", headers={
+        "apikey": service_key, "Authorization": f"Bearer {service_key}"})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as r:
+            return {row["store_id"]: row for row in json.loads(r.read().decode())}
+    except Exception as e:  # noqa
+        print("store_settings を読めませんでした（全店 ON として続けます）:", e)
+        return {}
 
 
 def record(supabase_url, service_key, rows):
@@ -121,7 +135,8 @@ def main():
         sys.exit("環境変数 SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY がありません（記録に必要）")
 
     now = datetime.now(timezone.utc).isoformat()
-    results, sent, held, failed = [], 0, 0, 0
+    settings = load_store_settings(supabase_url, service_key)
+    results, sent, held, failed, skipped = [], 0, 0, 0, 0
     with open(a.csv, newline="", encoding="utf-8") as f:
         for r in csv.DictReader(f):
             uid, visit_id, store_id = r["line_user_id"].strip(), r["visit_id"].strip(), (r.get("store_id") or a.store).strip()
@@ -129,7 +144,12 @@ def main():
                 continue
             send_id = str(uuid.uuid4())
             row = {"send_id": send_id, "visit_id": visit_id, "line_user_id": uid, "store_id": store_id, "scheduled_at": now}
-            if is_holdout(visit_id, uid):
+            st = settings.get(store_id)
+            if st is not None and not st.get("survey_enabled", True):
+                row.update(holdout_group="send", status="skipped", error="store survey_enabled=false"); skipped += 1
+                print(f"skip  {visit_id} {uid[:6]}… （{store_id} は配信OFF）")
+                results.append(row); continue
+            if is_holdout(visit_id, uid, (st or {}).get("holdout_percent", HOLDOUT_PERCENT)):
                 row.update(holdout_group="hold", status="hold"); held += 1
                 print(f"hold  {visit_id} {uid[:6]}…")
             else:
@@ -148,7 +168,7 @@ def main():
 
     if not a.dry_run:
         record(supabase_url, service_key, results)
-    print(f"\n合計 {len(results)} 件: 送信 {sent} / ホールドアウト {held} / 失敗 {failed}" + ("（dry-run）" if a.dry_run else ""))
+    print(f"\n合計 {len(results)} 件: 送信 {sent} / ホールドアウト {held} / 店舗OFF {skipped} / 失敗 {failed}" + ("（dry-run）" if a.dry_run else ""))
 
 
 if __name__ == "__main__":

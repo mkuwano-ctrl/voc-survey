@@ -42,6 +42,8 @@ LINE にカードが届き、「アンケートに答える」で回答画面が
    ```
 4. 結果は画面に出る（送信／ホールドアウト／失敗の件数）。`survey_sends` にも1行ずつ入る
 
+店舗ごとの ON/OFF とホールドアウト比率は Supabase の `store_settings` 表で持つ（`supabase/008_store_settings.sql`）。`survey_enabled` を外した店舗には送らず `skipped` で記録する。
+
 ホールドアウトは「来店ID＋UID」から決定的に決まる（同じ組なら何度実行しても同じ割当）。10%は送らず `hold` として記録する。
 
 ## 4. 配信の文面を変えたいとき
