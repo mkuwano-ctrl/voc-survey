@@ -130,6 +130,7 @@ def main():
     ap.add_argument("--csv", help="対象者CSV（列: line_user_id, visit_id, store_id）")
     ap.add_argument("--test-to", help="自分のUID宛てにテスト送信（記録しない）")
     ap.add_argument("--store", default="meguro")
+    ap.add_argument("--items", help="テスト送信用: 注文商品名を | 区切りで（例: プレミアムモルツ|たこ焼き 3個）。visit_items に入れて商品の設問を出す")
     ap.add_argument("--dry-run", action="store_true", help="送らず割当だけ表示")
     a = ap.parse_args()
 
@@ -139,9 +140,17 @@ def main():
 
     if a.test_to:
         send_id = str(uuid.uuid4())
-        url = liff_url(a.store, f"test_{datetime.now().strftime('%m%d%H%M')}", send_id)
+        test_visit = f"test_{datetime.now().strftime('%m%d%H%M')}"
+        url = liff_url(a.store, test_visit, send_id)
         if a.dry_run:
             print("dry-run:", url); return
+        if a.items:
+            items = [x.strip() for x in a.items.split("|") if x.strip()]
+            su, sk = os.environ.get("SUPABASE_URL"), os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+            if not (su and sk):
+                sys.exit("--items を使うには環境変数 SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY が必要です")
+            record_items(su, sk, [{"visit_id": test_visit, "store_id": a.store, "item_name": n, "sort_order": i} for i, n in enumerate(items)])
+            print(f"visit_items: {test_visit} に {len(items)} 品を登録")
         status, body = push(token, a.test_to, build_message(url))
         print("push:", status, body or "ok")
         return
