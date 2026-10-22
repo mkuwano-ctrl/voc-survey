@@ -34,7 +34,8 @@
   const SOURCES = ["以前から知っている", "通りがかり", "知人の紹介", "Googleマップ・検索", "食べログ・ぐるなび等", "Instagram・TikTok等", "UberEats等の配達アプリ", "その他"];
 
   // ---- 状態 ----------------------------------------------------------------
-  const answers = { q1_overall: null, q2_revisit: null, q3_issues: [], q3_detail: {}, comment: "", staff_name: "", source_channel: null };
+  const answers = { q1_overall: null, q2_revisit: null, q3_issues: [], q3_detail: {}, q_items_good: [], q_items_bad: [], comment: "", staff_name: "", source_channel: null };
+  let visitItems = [];   // この来店で注文した商品名（取れた場合だけ商品の設問を出す）
   let responseId = crypto.randomUUID();   // 来店IDとUIDが揃えば boot() で決定的なIDに置き換える
   let clientToken = crypto.randomUUID();  // 同上。自分の行だけ読める・更新できるための合言葉（ヘッダーで送る）
 
@@ -54,6 +55,7 @@
   function buildSteps() {
     const s = ["intro", "q1", "q2", "q3"];
     for (const a of answers.q3_issues) if (BRANCH[a]) s.push("branch:" + a);
+    if (visitItems.length) s.push("items_good", "items_bad");
     s.push("q4", "q5", "q6", "done");
     return s;
   }
@@ -68,6 +70,8 @@
       q2_revisit: answers.q2_revisit,
       q3_issues: answers.q3_issues,
       q3_detail: answers.q3_detail,
+      q_items_good: answers.q_items_good,
+      q_items_bad: answers.q_items_bad,
       comment: answers.comment || null,
       staff_name: answers.staff_name || null,
       source_channel: answers.source_channel,
@@ -97,6 +101,13 @@
     if (error.code === "23505") return;   // 既に同じ行がある（開き直し）。合言葉も同じなので、そのまま更新できる
     console.warn("insert failed", error);
     showError("回答の保存先に接続できませんでした。回答は続けられますが、記録されない可能性があります。（" + (error.code || "") + " " + (error.message || "") + "）");
+  }
+  async function loadVisitItems() {
+    if (!supa || !visitId || devMode) { if (devMode) { visitItems = ["プレミアムモルツ", "メガ角ハイボール", "たこ焼き 3個", "つぼきゅう"]; steps = buildSteps(); } return; }
+    const { data, error } = await supa.rpc("get_visit_items", { p_visit_id: visitId, p_token: clientToken });
+    if (error || !data) { console.warn("visit items", error); return; }
+    visitItems = data.map((x) => x.item_name);
+    steps = buildSteps();   // 画面の並びに商品の設問を足す（intro 表示中に差し替わる）
   }
   function showError(msg) {
     const e = document.createElement("div"); e.className = "error"; e.textContent = msg; screenEl.prepend(e);
@@ -167,16 +178,22 @@
       const area = step.slice(7);
       const q = h(`<div class="q">${qHead("03-" + (answers.q3_issues.indexOf(area) + 1), `「${area}」で、特に気になったのはどれですか？`, "1つお選びください", true)}</div>`);
       q.appendChild(choices(BRANCH[area], () => answers.q3_detail[area] || null, (v) => { answers.q3_detail[area] = v; }, false)); screenEl.appendChild(q);
+    } else if (step === "items_good") {
+      const q = h(`<div class="q">${qHead("04", "特に良かった商品はどれですか？", "いくつでも選べます（昨日のご注文から）", false)}</div>`);
+      q.appendChild(choices(visitItems.concat(["特になし"]), () => answers.q_items_good, (v) => { answers.q_items_good = v; }, true)); screenEl.appendChild(q);
+    } else if (step === "items_bad") {
+      const q = h(`<div class="q">${qHead("05", "物足りなかった商品があれば教えてください", "なければそのまま次へ", false)}</div>`);
+      q.appendChild(choices(visitItems, () => answers.q_items_bad, (v) => { answers.q_items_bad = v; }, true)); screenEl.appendChild(q);
     } else if (step === "q4") {
-      const q = h(`<div class="q">${qHead("04", "よろしければ一言お願いします", "良かった点・残念だった点、どちらでも", false)}</div>`);
+      const q = h(`<div class="q">${qHead(visitItems.length ? "06" : "04", "よろしければ一言お願いします", "良かった点・残念だった点、どちらでも", false)}</div>`);
       const t = h(`<textarea placeholder="いただいたコメントはお店の改善に役立てます">${answers.comment}</textarea>`);
       t.oninput = () => { answers.comment = t.value; }; q.appendChild(t); screenEl.appendChild(q);
     } else if (step === "q5") {
-      const q = h(`<div class="q">${qHead("05", "良い対応をしてくれたスタッフがいれば教えてください", "名前や特徴だけでも結構です", false)}</div>`);
+      const q = h(`<div class="q">${qHead(visitItems.length ? "07" : "05", "良い対応をしてくれたスタッフがいれば教えてください", "名前や特徴だけでも結構です", false)}</div>`);
       const t = h(`<input type="text" placeholder="例: メガネの男性スタッフ" value="${answers.staff_name.replace(/"/g, "&quot;")}" />`);
       t.oninput = () => { answers.staff_name = t.value; }; q.appendChild(t); screenEl.appendChild(q);
     } else if (step === "q6") {
-      const q = h(`<div class="q">${qHead("06", "今回のお店を何で知りましたか？", "", false)}</div>`);
+      const q = h(`<div class="q">${qHead(visitItems.length ? "08" : "06", "今回のお店を何で知りましたか？", "", false)}</div>`);
       q.appendChild(choices(SOURCES, () => answers.source_channel, (v) => { answers.source_channel = v; }, false)); screenEl.appendChild(q);
       nextBtn.textContent = "送信する";
     } else if (step === "done") {
@@ -252,7 +269,7 @@
       }
       steps = buildSteps();
       render();          // 先に画面を出す（保存先の応答を待たせない）
-      createRow();       // 行の作成は裏で進める。失敗時は画面上部に注意を出す
+      createRow().then(loadVisitItems);   // 行の作成 → この来店の商品名を取る（取れたら商品の設問を足す）
     } catch (e) {
       console.error(e);
       screenEl.innerHTML = "";

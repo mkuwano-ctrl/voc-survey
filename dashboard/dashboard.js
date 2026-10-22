@@ -10,7 +10,7 @@
   const demo = params.get("demo") === "1";
   const ISSUES = ["料理の味", "量や価格", "提供の速さ", "接客", "清潔さ", "注文のしやすさ", "特になし"];
   const STORE_NAME = (id) => { const st = settings.find((x) => x.store_id === id); return (st && st.store_name) || (C.STORES[id] && C.STORES[id].name) || id; };
-  const COLORS = { accent: "#d9452b", soft: "#f3b7ab", ink: "#1f2328", muted: "#9ca3af", blue: "#3b6fb6" };
+  const COLORS = { accent: "#d9452b", soft: "#f3b7ab", ink: "#1f2328", muted: "#9ca3af", blue: "#3b6fb6", ok: "#1a8f5a" };
 
   let supa = null, responses = [], sends = [], settings = [], charts = {};
   let view = "overview", tab = "report";
@@ -55,7 +55,7 @@
     if (demo) { applyFilters(); return; }
     const { from, to } = range();
     $("status").textContent = "読み込み中…";
-    const r = await supa.from("survey_responses").select("response_id,visit_id,send_id,store_id,status,q1_overall,q2_revisit,q3_issues,q3_detail,comment,staff_name,source_channel,is_dev,created_at,answered_at")
+    const r = await supa.from("survey_responses").select("response_id,visit_id,send_id,store_id,status,q1_overall,q2_revisit,q3_issues,q3_detail,q_items_good,q_items_bad,comment,staff_name,source_channel,is_dev,created_at,answered_at")
       .gte("created_at", from.toISOString()).lte("created_at", to.toISOString()).order("created_at", { ascending: false }).limit(5000);
     const s = await supa.from("survey_sends").select("send_id,visit_id,store_id,holdout_group,status,scheduled_at,sent_at")
       .gte("scheduled_at", from.toISOString()).lte("scheduled_at", to.toISOString()).limit(20000);
@@ -104,6 +104,7 @@
       issueCounts: countBy(done.flatMap((x) => x.q3_issues || []), ISSUES),
       sourceCounts: countBy(done.map((x) => x.source_channel).filter(Boolean)),
       staff: countBy(done.map((x) => (x.staff_name || "").trim()).filter(Boolean)),
+      items: itemFeedback(done),
       dist1: hist(done.map((x) => x.q1_overall)), dist2: hist(done.map((x) => x.q2_revisit)),
       detail: issueDetail(done), done_rows: done,
     };
@@ -112,6 +113,14 @@
     const m = {}; arr.forEach((k) => { m[k] = (m[k] || 0) + 1; });
     const keys = order ? order.filter((k) => m[k]) : Object.keys(m).sort((a, b) => m[b] - m[a]);
     return keys.map((k) => [k, m[k]]);
+  }
+  function itemFeedback(done) {
+    const m = {};
+    done.forEach((x) => {
+      (x.q_items_good || []).filter((i) => i !== "特になし").forEach((i) => { m[i] = m[i] || { good: 0, bad: 0 }; m[i].good++; });
+      (x.q_items_bad || []).forEach((i) => { m[i] = m[i] || { good: 0, bad: 0 }; m[i].bad++; });
+    });
+    return Object.entries(m).map(([item, v]) => ({ item, good: v.good, bad: v.bad })).sort((a, b) => (b.good + b.bad) - (a.good + a.bad));
   }
   function hist(vals) { const h = Array(11).fill(0); vals.forEach((v) => { if (v !== null && v !== undefined) h[v]++; }); return h; }
   function issueDetail(done) {
@@ -173,6 +182,9 @@
       ].join("");
       bar("issuesChart", t.issueCounts.map((x) => x[0]), t.issueCounts.map((x) => x[1]), COLORS.accent);
       bar("sourceChart", t.sourceCounts.map((x) => x[0]), t.sourceCounts.map((x) => x[1]), COLORS.blue);
+      $("itemTable").innerHTML = t.items.length
+        ? `<thead><tr><th>商品</th><th class="num">良かった</th><th class="num">物足りない</th><th></th></tr></thead><tbody>` + t.items.map((it) => { const n = it.good + it.bad, g = n ? Math.round((it.good / n) * 100) : 0; return `<tr><td>${esc(it.item)}</td><td class="num">${it.good}</td><td class="num">${it.bad}</td><td style="min-width:140px"><div class="bar"><span style="width:${g}%;background:${COLORS.ok}"></span><span style="width:${100 - g}%;background:${COLORS.accent}"></span></div></td></tr>`; }).join("") + `</tbody>`
+        : `<tbody><tr><td class="empty">商品の設問に答えた回答がまだありません（配信時に注文商品が渡されると出ます）</td></tr></tbody>`;
       $("staffList").innerHTML = t.staff.length ? t.staff.map(([k, n]) => `<span class="chip">${esc(k)}${n > 1 ? ` ×${n}` : ""}</span>`).join("") : `<span class="muted">まだありません</span>`;
     }
     if (tab === "overall") {
@@ -275,9 +287,9 @@
   // ---- CSV ----------------------------------------------------------------
   $("csvBtn").onclick = () => {
     const { rs } = filtered();
-    const cols = ["response_id", "visit_id", "store_id", "status", "answered_at", "q1_overall", "q2_revisit", "q3_issues", "q3_detail", "comment", "staff_name", "source_channel", "is_dev"];
+    const cols = ["response_id", "visit_id", "store_id", "status", "answered_at", "q1_overall", "q2_revisit", "q3_issues", "q3_detail", "q_items_good", "q_items_bad", "comment", "staff_name", "source_channel", "is_dev"];
     const esc2 = (v) => { const s = v === null || v === undefined ? "" : (typeof v === "object" ? JSON.stringify(v) : String(v)); return `"${s.replace(/"/g, '""')}"`; };
-    const csv = "﻿" + cols.join(",") + "\n" + rs.map((x) => cols.map((c) => esc2(c === "q3_issues" ? (x[c] || []).join("|") : x[c])).join(",")).join("\n");
+    const csv = "﻿" + cols.join(",") + "\n" + rs.map((x) => cols.map((c) => esc2(["q3_issues", "q_items_good", "q_items_bad"].includes(c) ? (x[c] || []).join("|") : x[c])).join(",")).join("\n");
     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = `voc_responses_${new Date().toISOString().slice(0, 10)}.csv`; a.click();
   };
 
@@ -309,9 +321,12 @@
           const issues = q1 >= 8 && rnd() < .7 ? ["特になし"] : [pick(["提供の速さ", "接客", "料理の味", "量や価格", "清潔さ", "注文のしやすさ"])];
           if (issues[0] !== "特になし" && rnd() < .3) issues.push(pick(["提供の速さ", "接客", "量や価格"]));
           const detail = {}; issues.filter((x) => x !== "特になし").forEach((a) => { detail[a] = pick({ "提供の速さ": ["ドリンクが遅い", "フードが遅い", "最初の一品が遅い"], "接客": ["スタッフの呼び出し", "会計", "入店時の対応", "商品のおすすめ"], "料理の味": ["味付け", "鮮度・温度"], "量や価格": ["価格が高い", "量が少ない"], "清潔さ": ["テーブル・カウンター", "トイレ・洗面台"], "注文のしやすさ": ["メニューが探しにくい", "操作が分かりにくい"] }[a]); });
+          const menu = ["プレミアムモルツ", "メガ角ハイボール", "レモンサワー", "たこ焼き 3個", "つぼきゅう", "明太チーズたこ焼き", "枝豆"];
+          const ordered = menu.filter(() => rnd() < .45); if (!ordered.length) ordered.push(menu[0]);
+          const good = ordered.filter(() => rnd() < .5), bad = q1 <= 6 ? ordered.filter(() => rnd() < .3) : [];
           const status = rnd() < .9 ? "completed" : "in_progress";
           const at = new Date(sched.getTime() + Math.floor(rnd() * 6) * 36e5);
-          responses.push({ response_id: `r-${sendId}`, visit_id: `v${day}${i}`, send_id: sendId, store_id: sid, status, q1_overall: q1, q2_revisit: q2, q3_issues: status === "completed" ? issues : [], q3_detail: status === "completed" ? detail : {}, comment: status === "completed" ? pick(comments) : "", staff_name: status === "completed" ? pick(staff) : "", source_channel: status === "completed" ? pick(sources) : null, is_dev: false, created_at: at.toISOString(), answered_at: status === "completed" ? at.toISOString() : null });
+          responses.push({ response_id: `r-${sendId}`, visit_id: `v${day}${i}`, send_id: sendId, store_id: sid, status, q1_overall: q1, q2_revisit: q2, q3_issues: status === "completed" ? issues : [], q3_detail: status === "completed" ? detail : {}, q_items_good: status === "completed" ? good : [], q_items_bad: status === "completed" ? bad : [], comment: status === "completed" ? pick(comments) : "", staff_name: status === "completed" ? pick(staff) : "", source_channel: status === "completed" ? pick(sources) : null, is_dev: false, created_at: at.toISOString(), answered_at: status === "completed" ? at.toISOString() : null });
         }
       });
     }

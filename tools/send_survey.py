@@ -3,7 +3,8 @@
 VOC アンケート 配信スクリプト（手動運用用・v0）
 
 やること:
-  1. 対象者リスト（CSV: line_user_id, visit_id, store_id）を読む
+  1. 対象者リスト（CSV: line_user_id, visit_id, store_id, items）を読む
+     items は注文商品名を | で区切る（例: プレミアムモルツ|メガ角ハイボール|たこ焼き 3個）。省略可
   2. 来店ID×UID から決定的にホールドアウト（10%）を割り当てる
   3. 送る群には LINE Messaging API（Push）でアンケートの案内を1通送る
   4. 送った／送らなかった結果を Supabase の survey_sends に記録する
@@ -23,7 +24,7 @@ VOC アンケート 配信スクリプト（手動運用用・v0）
   # 送らずに割当だけ確認
   python3 send_survey.py --csv targets.csv --dry-run
 """
-import argparse, csv, hashlib, json, os, sys, urllib.request, urllib.error, uuid
+import argparse, csv, hashlib, json, os, sys, urllib.request, urllib.error, urllib.parse, uuid
 from datetime import datetime, timezone
 
 LIFF_ID = "2011912835-rae1buWg"
@@ -94,6 +95,25 @@ def load_store_settings(supabase_url, service_key):
         return {}
 
 
+def record_items(supabase_url, service_key, rows):
+    """visit_items に来店ごとの注文商品を入れる（同じ来店の既存行は入れ替える）"""
+    if not rows:
+        return
+    visits = sorted({r["visit_id"] for r in rows})
+    for v in visits:
+        req = urllib.request.Request(f"{supabase_url}/rest/v1/visit_items?visit_id=eq.{urllib.parse.quote(v)}", method="DELETE", headers={
+            "apikey": service_key, "Authorization": f"Bearer {service_key}"})
+        try:
+            urllib.request.urlopen(req, timeout=15)
+        except urllib.error.HTTPError as e:
+            print("visit_items delete failed", v, e.code)
+    req = urllib.request.Request(f"{supabase_url}/rest/v1/visit_items", data=json.dumps(rows).encode(), method="POST", headers={
+        "apikey": service_key, "Authorization": f"Bearer {service_key}",
+        "Content-Type": "application/json", "Prefer": "return=minimal"})
+    with urllib.request.urlopen(req, timeout=15) as r:
+        return r.status
+
+
 def record(supabase_url, service_key, rows):
     if not rows:
         return
@@ -137,6 +157,7 @@ def main():
     now = datetime.now(timezone.utc).isoformat()
     settings = load_store_settings(supabase_url, service_key)
     results, sent, held, failed, skipped = [], 0, 0, 0, 0
+    item_rows, seen_visits = [], set()
     with open(a.csv, newline="", encoding="utf-8") as f:
         for r in csv.DictReader(f):
             uid, visit_id, store_id = r["line_user_id"].strip(), r["visit_id"].strip(), (r.get("store_id") or a.store).strip()
@@ -144,6 +165,10 @@ def main():
                 continue
             send_id = str(uuid.uuid4())
             row = {"send_id": send_id, "visit_id": visit_id, "line_user_id": uid, "store_id": store_id, "scheduled_at": now}
+            items = [x.strip() for x in (r.get("items") or "").split("|") if x.strip()]
+            if items and visit_id not in seen_visits:
+                seen_visits.add(visit_id)
+                item_rows += [{"visit_id": visit_id, "store_id": store_id, "item_name": name, "sort_order": i} for i, name in enumerate(items)]
             st = settings.get(store_id)
             if st is not None and not st.get("survey_enabled", True):
                 row.update(holdout_group="send", status="skipped", error="store survey_enabled=false"); skipped += 1
@@ -167,6 +192,7 @@ def main():
             results.append(row)
 
     if not a.dry_run:
+        record_items(supabase_url, service_key, item_rows)   # 回答画面が商品の設問を出せるよう、配信前に入れる
         record(supabase_url, service_key, results)
     print(f"\n合計 {len(results)} 件: 送信 {sent} / ホールドアウト {held} / 店舗OFF {skipped} / 失敗 {failed}" + ("（dry-run）" if a.dry_run else ""))
 
